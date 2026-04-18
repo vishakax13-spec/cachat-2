@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>CaChat Games</title>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<style>
+:root{
+  --bg:#050505;--bg2:#0e0e0e;--bg3:#161616;--bg4:#1f1f1f;--bg5:#232323;
+  --bd:#1f1f1f;--bd2:#2a2a2a;--bd3:#333;
+  --tx:#f7f7f7;--tx2:#a0a0a0;--tx3:#5a5a5a;
+  --ac:#0095f6;--rd:#ed4956;--gn:#23d160;--pu:#833AB4;--or:#f09433;
+  --gr:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  --gx:linear-gradient(135deg,#0095f6,#833AB4);
+  --gold:#FFD700;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;font-size:14px;overflow:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:99px}
+button,input{font-family:inherit;outline:none;border:none;background:none}
+
+/* PAGES */
+.page{position:fixed;inset:0;display:none;flex-direction:column;overflow:hidden}
+.page.on{display:flex}
+
+/* HEADER */
+.ghd{height:56px;border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;background:rgba(5,5,5,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:10}
+.ghd-back{color:var(--tx);font-size:20px;cursor:pointer;padding:6px 12px 6px 0;display:flex;align-items:center;opacity:.8;transition:opacity .15s}
+.ghd-back:active{opacity:.5}
+.ghd-title{font-size:17px;font-weight:800;flex:1;letter-spacing:-.4px}
+.ghd-actions{display:flex;gap:8px;align-items:center}
+
+/* LOBBY */
+#page-lobby{background:var(--bg)}
+#lobby-scroll{flex:1;overflow-y:auto;padding:0 16px 32px}
+.game-hero{text-align:center;padding:28px 0 20px;position:relative}
+.game-hero-icon{font-size:64px;margin-bottom:10px;display:block;filter:drop-shadow(0 0 24px rgba(0,149,246,.5))}
+.game-hero h1{font-size:26px;font-weight:900;letter-spacing:-1px;margin-bottom:6px;background:var(--gr);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.game-hero p{font-size:13px;color:var(--tx3);font-weight:500}
+
+/* GAME CARDS */
+.game-card{background:var(--bg2);border:1px solid var(--bd2);border-radius:20px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden;transition:transform .15s,border-color .15s}
+.game-card:active{transform:scale(.985)}
+.game-card::after{content:'';position:absolute;inset:0;background:var(--gx);opacity:0;transition:opacity .2s;pointer-events:none}
+.game-card:hover{border-color:var(--bd3)}
+.gc-glow{position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;opacity:.08;pointer-events:none}
+.gc-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(0,149,246,.12);border:1px solid rgba(0,149,246,.25);border-radius:99px;padding:3px 10px;font-size:10px;font-weight:800;color:var(--ac);margin-bottom:10px;letter-spacing:.5px;text-transform:uppercase}
+.gc-title{font-size:20px;font-weight:900;letter-spacing:-.5px;margin-bottom:4px}
+.gc-desc{font-size:12px;color:var(--tx3);margin-bottom:16px;line-height:1.5}
+.gc-btns{display:flex;gap:10px}
+.gc-btn{flex:1;padding:11px 8px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s,transform .1s;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;gap:6px}
+.gc-btn:active{opacity:.75;transform:scale(.96)}
+.gc-btn.primary{background:var(--gx);color:#fff}
+.gc-btn.secondary{background:var(--bg3);color:var(--tx);border:1px solid var(--bd2)}
+.gc-emoji{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:72px;opacity:.1;pointer-events:none;line-height:1}
+
+/* INVITE OVERLAY */
+#inv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#inv-overlay.on{display:flex}
+.inv-sheet{background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;border:1px solid var(--bd2);border-bottom:none;animation:slideUp .28s cubic-bezier(.34,1.56,.64,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.inv-hd{padding:14px 18px 12px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.inv-hd-left{display:flex;align-items:center;gap:10px}
+.inv-game-icon{font-size:22px}
+.inv-hd h3{font-size:15px;font-weight:800}
+.inv-hd-sub{font-size:11px;color:var(--tx3);font-weight:500;margin-top:1px}
+.inv-close{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg3);color:var(--tx2);font-size:16px;cursor:pointer;transition:background .15s;border:1px solid var(--bd2)}
+.inv-close:hover{background:var(--bg4)}
+.inv-search{padding:10px 16px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.inv-search input{width:100%;background:var(--bg3);border:1px solid var(--bd2);border-radius:12px;padding:10px 14px;color:var(--tx);font-size:13px;transition:border-color .2s}
+.inv-search input:focus{border-color:var(--ac)}
+.inv-search input::placeholder{color:var(--tx3)}
+.inv-list{flex:1;overflow-y:auto;padding:6px 0 16px}
+.inv-empty{padding:40px;text-align:center;color:var(--tx3);font-size:13px}
+.inv-empty-icon{font-size:36px;margin-bottom:10px;display:block;opacity:.4}
+.inv-section-label{padding:8px 16px 4px;font-size:10px;font-weight:800;color:var(--tx3);letter-spacing:1px;text-transform:uppercase}
+.inv-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .1s;position:relative}
+.inv-item:hover,.inv-item:active{background:rgba(255,255,255,.04)}
+.inv-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:16px;flex-shrink:0;overflow:hidden;position:relative}
+.inv-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.inv-av-online{position:absolute;bottom:0;right:0;width:11px;height:11px;background:var(--gn);border-radius:50%;border:2px solid var(--bg2)}
+.inv-info{flex:1;min-width:0}
+.inv-nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.inv-un{font-size:11px;color:var(--tx3);margin-top:1px}
+.inv-send-btn{padding:7px 14px;border-radius:10px;background:var(--gx);color:#fff;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s;white-space:nowrap;flex-shrink:0}
+.inv-send-btn:active{opacity:.7}
+.inv-send-btn.sent{background:var(--bg3);color:var(--gn);border:1px solid rgba(35,209,96,.3)}
+.vbadge{width:14px;height:14px;background:var(--ac);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.vbadge::after{content:'✓';color:#fff;font-size:8px;font-weight:900}
+
+/* WAITING ROOM */
+#page-waiting{background:var(--bg);align-items:center;justify-content:center}
+.wait-inner{text-align:center;padding:32px 24px;max-width:360px;width:100%}
+.wait-anim{display:flex;justify-content:center;gap:10px;margin:24px 0 20px}
+.wd{width:12px;height:12px;border-radius:50%;animation:wdp 1.1s ease-in-out infinite}
+.wd:nth-child(1){background:var(--ac);animation-delay:0s}
+.wd:nth-child(2){background:var(--pu);animation-delay:.18s}
+.wd:nth-child(3){background:var(--rd);animation-delay:.36s}
+@keyframes wdp{0%,60%,100%{transform:scale(.5);opacity:.4}30%{transform:scale(1.2);opacity:1}}
+.wait-title{font-size:20px;font-weight:800;margin-bottom:8px;letter-spacing:-.3px}
+.wait-sub{font-size:13px;color:var(--tx3);line-height:1.5}
+.wait-cancel{margin-top:24px;padding:12px 28px;border-radius:12px;background:var(--bg3);color:var(--tx);font-size:14px;font-weight:700;cursor:pointer;border:1px solid var(--bd2);transition:opacity .15s}
+.wait-cancel:active{opacity:.7}
+.wait-avatar-pair{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:24px}
+.wap-av{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:20px;overflow:hidden;border:2.5px solid var(--bd2)}
+.wap-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.wap-vs{font-size:11px;font-weight:900;color:var(--tx3);letter-spacing:2px}
+.wap-spinner{position:relative}
+.wap-spinner::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid transparent;border-top-color:var(--ac);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TTT PAGE */
+#page-ttt{background:var(--bg)}
+.ttt-body{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* SPLIT VIEW: game + chat */
+.ttt-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 16px 12px;gap:14px;overflow-y:auto;transition:flex .3s}
+.ttt-main.chat-open{flex:0 0 58%}
+
+/* CHAT PANEL */
+.game-chat-panel{background:var(--bg2);border-top:1px solid var(--bd);display:none;flex-direction:column;overflow:hidden;transition:all .3s;max-height:0}
+.game-chat-panel.open{display:flex;max-height:42%}
+.gcp-hd{padding:8px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.gcp-hd-title{font-size:12px;font-weight:800;color:var(--tx2);letter-spacing:.5px;text-transform:uppercase}
+.gcp-close{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border-radius:50%;cursor:pointer;color:var(--tx3);font-size:13px;transition:background .15s}
+.gcp-msgs{flex:1;overflow-y:auto;padding:8px 14px;display:flex;flex-direction:column;gap:6px}
+.gcm{max-width:80%;padding:8px 12px;border-radius:14px;font-size:13px;line-height:1.4;word-break:break-word}
+.gcm.mine{background:var(--gx);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.gcm.theirs{background:var(--bg3);color:var(--tx);align-self:flex-start;border-bottom-left-radius:4px}
+.gcm-name{font-size:10px;font-weight:700;margin-bottom:3px;opacity:.7}
+.gcm-text{word-break:break-word}
+.gcp-inp{display:flex;gap:8px;padding:8px 14px;border-top:1px solid var(--bd);flex-shrink:0;align-items:flex-end}
+.gcp-inp input{flex:1;background:var(--bg3);border:1px solid var(--bd2);border-radius:20px;padding:9px 14px;color:var(--tx);font-size:13px;transition:border-color .2s}
+.gcp-inp input:focus{border-color:var(--ac)}
+.gcp-inp input::placeholder{color:var(--tx3)}
+.gcp-send{width:36px;height:36px;border-radius:50%;background:var(--gx);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;border:none;transition:opacity .15s}
+.gcp-send:active{opacity:.7}
+.gcp-send svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* TTT GAME ELEMENTS */
+.vs-badge{display:flex;align-items:center;gap:0;background:var(--bg2);border-radius:16px;padding:10px 14px;border:1px solid var(--bd2);width:100%;max-width:330px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.vs-player{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.vs-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;overflow:hidden;border:2px solid transparent;transition:border-color .3s,box-shadow .3s}
+.vs-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.vs-av.active-x{border-color:#4facfe;box-shadow:0 0 12px rgba(79,172,254,.5)}
+.vs-av.active-o{border-color:#f5576c;box-shadow:0 0 12px rgba(245,87,108,.5)}
+.vs-nm{font-size:11px;font-weight:700;text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vs-mark{font-size:10px;font-weight:900;letter-spacing:.5px}
+.vs-mark.x{color:#4facfe}.vs-mark.o{color:#f5576c}
+.vs-sep{width:40px;display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
+.vs-sep-vs{font-size:10px;font-weight:900;color:var(--tx3);letter-spacing:2px}
+.vs-sep-score{font-size:18px;font-weight:900;letter-spacing:1px}
+
+.ttt-status{font-size:16px;font-weight:800;text-align:center;letter-spacing:-.2px;min-height:24px;padding:0 8px}
+.ttt-board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:310px}
+.ttt-cell{aspect-ratio:1;background:var(--bg2);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:52px;font-weight:900;transition:background .12s,transform .1s,box-shadow .2s;border:1.5px solid var(--bd2);position:relative;overflow:hidden;user-select:none}
+.ttt-cell::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,rgba(0,149,246,.12),transparent);opacity:0;transition:opacity .2s}
+.ttt-cell:hover:not(.taken)::before{opacity:1}
+.ttt-cell:active:not(.taken){transform:scale(.9)}
+.ttt-cell.taken{cursor:default}
+.ttt-cell.x-cell{background:linear-gradient(135deg,#091526,#0a1a2e);border-color:rgba(79,172,254,.3)}
+.ttt-cell.o-cell{background:linear-gradient(135deg,#1a0a0d,#200d10);border-color:rgba(245,87,108,.3)}
+.ttt-cell.win{animation:winPulse .55s ease infinite alternate}
+@keyframes winPulse{from{transform:scale(1);box-shadow:none}to{transform:scale(1.04);box-shadow:0 0 22px 4px rgba(79,172,254,.4)}}
+.ttt-cell.win.o-cell{animation-name:winPulseO}
+@keyframes winPulseO{from{transform:scale(1);box-shadow:none}to{transform:scale(1.04);box-shadow:0 0 22px 4px rgba(245,87,108,.4)}}
+.x-mark{color:#4facfe;text-shadow:0 0 18px rgba(79,172,254,.7);line-height:1;font-size:52px}
+.o-mark{color:#f5576c;text-shadow:0 0 18px rgba(245,87,108,.7);line-height:1;font-size:52px}
+.cell-pop{animation:cellPop .22s cubic-bezier(.34,1.56,.64,1)}
+@keyframes cellPop{from{transform:scale(0)}to{transform:scale(1)}}
+
+.ttt-scores{display:flex;gap:10px;width:100%;max-width:310px}
+.ttt-score{flex:1;background:var(--bg2);border-radius:12px;padding:10px 8px;text-align:center;border:1px solid var(--bd2)}
+.tss-lbl{font-size:9px;color:var(--tx3);font-weight:800;letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px}
+.tss-val{font-size:22px;font-weight:900;letter-spacing:-1px}
+.tss-val.x{color:#4facfe}.tss-val.o{color:#f5576c}.tss-val.d{color:var(--tx3)}
+
+.ttt-action-bar{display:flex;gap:8px;width:100%;max-width:310px}
+.ttt-btn{flex:1;padding:12px 8px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s,transform .1s;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;gap:6px}
+.ttt-btn:active{opacity:.75;transform:scale(.97)}
+.ttt-btn.primary{background:var(--gx);color:#fff}
+.ttt-btn.sec{background:var(--bg3);color:var(--tx);border:1px solid var(--bd2)}
+.ttt-btn.chat-btn{background:var(--bg3);color:var(--tx);border:1px solid var(--bd2);position:relative}
+.chat-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--rd);border-radius:50%;font-size:9px;font-weight:900;color:#fff;display:none;align-items:center;justify-content:center;border:2px solid var(--bg)}
+.chat-badge.on{display:flex}
+
+/* RESULT OVERLAY */
+#result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:50;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#result-overlay.on{display:flex}
+.result-card{background:var(--bg2);border:1px solid var(--bd2);border-radius:24px;padding:32px 28px;text-align:center;max-width:300px;width:100%;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.result-emoji{font-size:56px;display:block;margin-bottom:12px}
+.result-title{font-size:22px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
+.result-sub{font-size:13px;color:var(--tx3);margin-bottom:24px}
+.result-btns{display:flex;gap:10px}
+.result-btn{flex:1;padding:13px;border-radius:13px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s}
+.result-btn:active{opacity:.7}
+.result-btn.primary{background:var(--gx);color:#fff}
+.result-btn.sec{background:var(--bg3);color:var(--tx);border:1px solid var(--bd2)}
+
+/* EXIT CONFIRM */
+#exit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:60;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#exit-overlay.on{display:flex}
+.exit-card{background:var(--bg2);border:1px solid var(--bd2);border-radius:20px;padding:24px 22px;max-width:280px;width:calc(100% - 40px)}
+.exit-title{font-size:17px;font-weight:800;margin-bottom:6px}
+.exit-sub{font-size:13px;color:var(--tx3);margin-bottom:20px;line-height:1.5}
+.exit-btns{display:flex;gap:10px}
+.exit-btn{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s}
+.exit-btn:active{opacity:.7}
+.exit-btn.danger{background:var(--rd);color:#fff}
+.exit-btn.cancel{background:var(--bg3);color:var(--tx);border:1px solid var(--bd2)}
+
+/* GHOST LOADING */
+.ghost{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:10px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.ghost-item{display:flex;align-items:center;gap:12px;padding:10px 16px}
+.ghost-av{width:44px;height:44px;border-radius:50%}
+.ghost-txt{flex:1}
+.ghost-line{height:12px;margin-bottom:6px;border-radius:6px}
+.ghost-line.short{width:60%}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);background:rgba(25,25,25,.97);backdrop-filter:blur(16px);border:1px solid var(--bd2);border-radius:14px;padding:11px 20px;font-size:13px;z-index:999;transition:all .28s cubic-bezier(.34,1.56,.64,1);opacity:0;pointer-events:none;font-weight:600;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.7)}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.green{background:rgba(35,209,96,.18);border-color:rgba(35,209,96,.35);color:var(--gn)}
+.toast.red{background:rgba(237,73,86,.18);border-color:rgba(237,73,86,.35);color:var(--rd)}
+.toast.blue{background:rgba(0,149,246,.18);border-color:rgba(0,149,246,.35);color:var(--ac)}
+
+/* NOTIF BADGE on chat btn */
+.hd-chat-btn{width:36px;height:36px;border-radius:50%;background:var(--bg3);border:1px solid var(--bd2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:background .15s;position:relative;flex-shrink:0}
+.hd-chat-btn:active{background:var(--bg4)}
+.hd-notif-dot{position:absolute;top:2px;right:2px;width:9px;height:9px;background:var(--rd);border-radius:50%;border:2px solid var(--bg);display:none}
+.hd-notif-dot.on{display:block}
+
+/* TURN INDICATOR */
+.turn-indicator{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.turn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.turn-dot.x{background:#4facfe}.turn-dot.o{background:#f5576c}
+
+/* ONLINE DOT */
+.online-status{font-size:11px;color:var(--gn);display:flex;align-items:center;gap:4px}
+.online-status::before{content:'';width:6px;height:6px;background:var(--gn);border-radius:50%;display:inline-block}
+
+/* OPPONENT LEFT BANNER */
+.opp-left-banner{background:rgba(237,73,86,.12);border:1px solid rgba(237,73,86,.25);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--rd);text-align:center;width:100%;max-width:310px;display:none;font-weight:600}
+.opp-left-banner.on{display:block}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOBBY ═══ -->
+<div class="page on" id="page-lobby">
+  <div class="ghd">
+    <span class="ghd-back" onclick="goBack()">←</span>
+    <span class="ghd-title">CaChat Games</span>
+  </div>
+  <div id="lobby-scroll">
+    <div class="game-hero">
+      <span class="game-hero-icon">🎮</span>
+      <h1>Game Zone</h1>
+      <p>Play with friends or challenge the bot</p>
+    </div>
+
+    <!-- TIC TAC TOE -->
+    <div class="game-card">
+      <div class="gc-glow" style="background:radial-gradient(#0095f6,transparent)"></div>
+      <div class="gc-tag">⭐ Popular</div>
+      <div class="gc-title">Tic Tac Toe</div>
+      <div class="gc-desc">Classic 3×3 strategy. Block, strike, and win!</div>
+      <div class="gc-btns">
+        <button class="gc-btn primary" onclick="startVsBot('ttt')">🤖 vs Bot</button>
+        <button class="gc-btn secondary" onclick="openInvite('ttt')">👥 Invite Friend</button>
+      </div>
+      <div class="gc-emoji">⭕</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ WAITING ROOM ═══ -->
+<div class="page" id="page-waiting">
+  <div class="wait-inner">
+    <div class="wait-avatar-pair">
+      <div class="wap-av" id="wait-my-av" style="background:#0095f6">Me</div>
+      <div class="wap-vs">VS</div>
+      <div class="wap-av wap-spinner" id="wait-opp-av" style="background:#833AB4">?</div>
+    </div>
+    <div class="wait-title" id="wait-title">Waiting for opponent...</div>
+    <div class="wait-sub" id="wait-sub">Invite sent! Waiting for them to accept your challenge.</div>
+    <div class="wait-anim"><div class="wd"></div><div class="wd"></div><div class="wd"></div></div>
+    <button class="wait-cancel" onclick="cancelWaiting()">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══ TTT GAME PAGE ═══ -->
+<div class="page" id="page-ttt">
+  <div class="ghd">
+    <span class="ghd-back" onclick="confirmExit()">←</span>
+    <span class="ghd-title" id="ttt-title">Tic Tac Toe</span>
+    <div class="ghd-actions">
+      <div class="hd-chat-btn" id="chat-toggle-btn" onclick="toggleChat()" title="Chat" style="display:none">
+        💬
+        <div class="hd-notif-dot" id="chat-notif-dot"></div>
+      </div>
+    </div>
+  </div>
+  <div class="ttt-body">
+    <div class="ttt-main" id="ttt-main">
+      <!-- VS Badge -->
+      <div class="vs-badge" id="vs-badge">
+        <div class="vs-player">
+          <div class="vs-av" id="vs-p1-av" style="background:#0095f6">X</div>
+          <div class="vs-nm" id="vs-p1-nm">You</div>
+          <div class="vs-mark x">X</div>
+        </div>
+        <div class="vs-sep">
+          <div class="vs-sep-vs">VS</div>
+          <div class="vs-sep-score" id="vs-score">0:0</div>
+        </div>
+        <div class="vs-player">
+          <div class="vs-av" id="vs-p2-av" style="background:#ed4956">O</div>
+          <div class="vs-nm" id="vs-p2-nm">Bot</div>
+          <div class="vs-mark o">O</div>
+        </div>
+      </div>
+
+      <!-- Opponent left banner -->
+      <div class="opp-left-banner" id="opp-left-banner">⚠️ Opponent left the game</div>
+
+      <!-- Status -->
+      <div class="ttt-status" id="ttt-status">Your turn (X)</div>
+
+      <!-- Board -->
+      <div class="ttt-board" id="ttt-board"></div>
+
+      <!-- Scores -->
+      <div class="ttt-scores">
+        <div class="ttt-score"><div class="tss-lbl" id="s1-lbl">X (You)</div><div class="tss-val x" id="s1-val">0</div></div>
+        <div class="ttt-score"><div class="tss-lbl">Draw</div><div class="tss-val d" id="sd-val">0</div></div>
+        <div class="ttt-score"><div class="tss-lbl" id="s2-lbl">O (Bot)</div><div class="tss-val o" id="s2-val">0</div></div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="ttt-action-bar">
+        <button class="ttt-btn primary" onclick="requestReset()">↺ New Game</button>
+        <button class="ttt-btn sec" id="game-chat-btn" onclick="toggleChat()" style="display:none">
+          💬 Chat
+          <span class="chat-badge" id="chat-badge">!</span>
+        </button>
+        <button class="ttt-btn sec" onclick="confirmExit()">← Exit</button>
+      </div>
+    </div>
+
+    <!-- In-game chat panel -->
+    <div class="game-chat-panel" id="game-chat-panel">
+      <div class="gcp-hd">
+        <span class="gcp-hd-title">Game Chat</span>
+        <div class="gcp-close" onclick="toggleChat()">✕</div>
+      </div>
+      <div class="gcp-msgs" id="gcp-msgs"></div>
+      <div class="gcp-inp">
+        <input type="text" id="gcp-input" placeholder="Message..." maxlength="200" onkeydown="if(event.key==='Enter')sendGameChat()"/>
+        <button class="gcp-send" onclick="sendGameChat()">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INVITE OVERLAY ═══ -->
+<div id="inv-overlay" onclick="if(event.target===this)closeInvite()">
+  <div class="inv-sheet">
+    <div class="inv-hd">
+      <div class="inv-hd-left">
+        <span class="inv-game-icon" id="inv-game-icon">⭕</span>
+        <div>
+          <div class="inv-hd h3" id="inv-title">Invite to Tic Tac Toe</div>
+          <div class="inv-hd-sub">Select a friend from your chats</div>
+        </div>
+      </div>
+      <div class="inv-close" onclick="closeInvite()">✕</div>
+    </div>
+    <div class="inv-search">
+      <input type="text" id="inv-search-input" placeholder="🔍  Search friends..." oninput="filterInviteList(this.value)"/>
+    </div>
+    <div class="inv-list" id="inv-list">
+      <div class="ghost-item"><div class="ghost ghost-av"></div><div class="ghost-txt"><div class="ghost ghost-line" style="width:55%;height:13px;margin-bottom:7px"></div><div class="ghost ghost-line short" style="height:11px"></div></div></div>
+      <div class="ghost-item"><div class="ghost ghost-av"></div><div class="ghost-txt"><div class="ghost ghost-line" style="width:65%;height:13px;margin-bottom:7px"></div><div class="ghost ghost-line short" style="height:11px"></div></div></div>
+      <div class="ghost-item"><div class="ghost ghost-av"></div><div class="ghost-txt"><div class="ghost ghost-line" style="width:45%;height:13px;margin-bottom:7px"></div><div class="ghost ghost-line short" style="height:11px"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RESULT OVERLAY ═══ -->
+<div id="result-overlay">
+  <div class="result-card">
+    <span class="result-emoji" id="result-emoji">🎉</span>
+    <div class="result-title" id="result-title">You Won!</div>
+    <div class="result-sub" id="result-sub">Well played!</div>
+    <div class="result-btns">
+      <button class="result-btn primary" onclick="closeResult();requestReset()">Play Again</button>
+      <button class="result-btn sec" onclick="closeResult();confirmExit()">Exit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EXIT CONFIRM ═══ -->
+<div id="exit-overlay">
+  <div class="exit-card">
+    <div class="exit-title">Exit Game?</div>
+    <div class="exit-sub" id="exit-sub">Your opponent will be notified that you left.</div>
+    <div class="exit-btns">
+      <button class="exit-btn cancel" onclick="closeExitConfirm()">Stay</button>
+      <button class="exit-btn danger" onclick="doExit()">Exit</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+var token = localStorage.getItem('cc3_t'), me = null;
+try { me = JSON.parse(localStorage.getItem('cc3_me') || 'null'); } catch(e) {}
+var API = '';
+var socket = null;
+var curGame = null, vsBot = true, vsUser = null;
+var myRole = 'X'; // My role in current game: X or O
+var gameRoomId = null;
+var waitPollTimer = null;
+var pendingInviteMsgId = null;
+
+// TTT
+var tttBoard = Array(9).fill(null), tttTurn = 'X', tttOver = false;
+var tttScores = { X: 0, O: 0, D: 0 };
+var WIN_COMBOS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+// Invite list data
+var _invGame = null, _allConvos = [], _sentInvites = {};
+
+// Chat
+var chatOpen = false, unreadChat = 0;
+var _toastT = null;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+if (!token) { window.location.href = '/'; }
+setupSocket();
+
+function setupSocket() {
+  socket = io(API || window.location.origin, { transports: ['websocket', 'polling'] });
+  socket.on('connect', function() {
+    if (me && me.id) socket.emit('user_online', me.id);
+  });
+
+  // Game invite received (via chat message)
+  socket.on('new_message', function(msg) {
+    if (msg.msg_type === 'game_invite') {
+      try {
+        var data = JSON.parse(msg.content);
+        if (data.status === 'pending') {
+          showIncomingInvite(msg, data);
+        }
+      } catch(e) {}
+    }
+  });
+
+  // Partner joined the game room
+  socket.on('game_partner_joined', function(d) {
+    if (document.getElementById('page-waiting').classList.contains('on')) {
+      // Partner accepted, go to game
+      clearInterval(waitPollTimer);
+      toast('Opponent joined! Game starting...', 'green');
+      setTimeout(function() { startVsHuman(); }, 600);
+    }
+  });
+
+  // Move received from opponent
+  socket.on('game_move', function(d) {
+    if (!vsBot && d.userId !== (me && me.id)) {
+      tttBoard = d.board;
+      tttTurn = d.turn;
+      tttScores = d.scores || tttScores;
+      renderBoard();
+      updScores();
+      var win = checkWin();
+      if (win) {
+        highlightWin(win);
+        tttOver = true;
+        var loser = tttTurn === 'X' ? 'O' : 'X';
+        document.getElementById('ttt-status').textContent = 'Opponent played ' + loser + '!';
+        // Will be caught by checkWin in normal flow - but here we handle it after receiving
+        // recalculate
+        var winMark = d.board[win[0]];
+        tttScores[winMark]++;
+        updScores();
+        showResult(winMark);
+      } else if (tttBoard.every(function(v) { return v; })) {
+        tttOver = true; tttScores.D++; updScores();
+        showResult('D');
+      } else {
+        var myMark = myRole;
+        document.getElementById('ttt-status').textContent = myMark === tttTurn ? 'Your turn (' + myMark + ')' : 'Waiting for opponent...';
+        updateTurnHighlight();
+      }
+    }
+  });
+
+  // Reset request
+  socket.on('game_reset', function(d) {
+    if (!vsBot) {
+      tttBoard = Array(9).fill(null); tttTurn = 'X'; tttOver = false;
+      renderBoard();
+      // Alternate who goes first (switch roles)
+      if (myRole === 'X') { myRole = 'O'; } else { myRole = 'X'; }
+      var statusMsg = myRole === 'X' ? 'Your turn (X)' : 'Waiting for opponent (X goes first)...';
+      document.getElementById('ttt-status').textContent = statusMsg;
+      updateTurnHighlight();
+      closeResult();
+      toast('New game started!', 'blue');
+    }
+  });
+
+  // Chat message
+  socket.on('game_chat', function(d) {
+    if (d.userId !== (me && me.id)) {
+      appendChatMsg(d.name || d.username, d.message, false);
+      if (!chatOpen) {
+        unreadChat++;
+        document.getElementById('chat-badge').textContent = unreadChat > 9 ? '9+' : unreadChat;
+        document.getElementById('chat-badge').classList.add('on');
+        document.getElementById('chat-notif-dot').classList.add('on');
+      }
+    }
+  });
+
+  // Partner left
+  socket.on('game_partner_left', function(d) {
+    if (!vsBot) {
+      document.getElementById('opp-left-banner').classList.add('on');
+      toast(((vsUser && (vsUser.name || vsUser.username)) || 'Opponent') + ' left the game', 'red');
+      tttOver = true;
+    }
+  });
+
+  // Invite response from invited user
+  socket.on('game_invite_response', function(d) {
+    if (d.is_invite) {
+      // This is the initial invite notification carrying room_id to invitee
+      // Store the real room_id for the invitee to join
+      window._pendingInviteRoomId = d.room_id;
+      return;
+    }
+    if (d.accepted) {
+      clearInterval(waitPollTimer);
+      vsUser = { id: d.userId, username: d.username, name: d.name, avatar: d.avatar, avatar_color: d.avatar_color };
+      // Use the room_id the accepter joined
+      if (d.room_id) {
+        gameRoomId = d.room_id;
+        if (socket) socket.emit('game_join_room', { token: token, room_id: gameRoomId });
+      }
+      setupVsHumanUI();
+      startVsHuman();
+      toast((d.name || d.username) + ' accepted! Game starting...', 'green');
+    } else if (d.accepted === false) {
+      clearInterval(waitPollTimer);
+      showPage('page-lobby');
+      toast((d.name || d.username) + ' declined the invite', 'red');
+    }
+  });
+}
+
+// ─── PAGE NAV ─────────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('on'); });
+  document.getElementById(id).classList.add('on');
+}
+
+function goBack() {
+  if (window.history.length > 1) window.history.back();
+  else window.location.href = '/';
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast on' + (type ? ' ' + type : '');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(function() { el.className = 'toast'; }, 3200);
+}
+
+// ─── INVITE SYSTEM ────────────────────────────────────────────────────────────
+var GAME_ICONS = { ttt: '⭕', checkers: '🔴', chess: '♟️' };
+var GAME_NAMES = { ttt: 'Tic Tac Toe', checkers: 'Checkers', chess: 'Chess' };
+
+function openInvite(g) {
+  _invGame = g;
+  _sentInvites = {};
+  document.getElementById('inv-title').textContent = 'Invite to ' + (GAME_NAMES[g] || g);
+  document.getElementById('inv-game-icon').textContent = GAME_ICONS[g] || '🎮';
+  document.getElementById('inv-search-input').value = '';
+  document.getElementById('inv-overlay').classList.add('on');
+  loadInviteList();
+}
+
+function closeInvite() {
+  document.getElementById('inv-overlay').classList.remove('on');
+}
+
+function loadInviteList() {
+  var il = document.getElementById('inv-list');
+  il.innerHTML = [1,2,3,4].map(function() {
+    return '<div class="ghost-item"><div class="ghost ghost-av" style="width:44px;height:44px;border-radius:50%;flex-shrink:0"></div><div class="ghost-txt"><div class="ghost ghost-line" style="width:55%;height:13px;margin-bottom:7px"></div><div class="ghost ghost-line short" style="height:11px"></div></div></div>';
+  }).join('');
+
+  fetch(API + '/api/conversations', { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(r) { return r.json(); })
+    .then(function(convos) {
+      _allConvos = convos || [];
+      renderInviteList(_allConvos);
+    })
+    .catch(function() {
+      document.getElementById('inv-list').innerHTML = '<div class="inv-empty"><span class="inv-empty-icon">📭</span>Failed to load chats. Check your connection.</div>';
+    });
+}
+
+function renderInviteList(list) {
+  var il = document.getElementById('inv-list');
+  if (!list || !list.length) {
+    il.innerHTML = '<div class="inv-empty"><span class="inv-empty-icon">💬</span>No chats yet. Start a conversation first!</div>';
+    return;
+  }
+  var html = '<div class="inv-section-label">Recent Chats</div>';
+  list.forEach(function(c) {
+    var bg = c.avatar_color || '#833AB4';
+    var av = c.avatar
+      ? '<img src="' + c.avatar + '" alt="" onerror="this.style.display=\'none\'">'
+      : (((c.name || c.username || '?')[0]).toUpperCase());
+    var displayName = c.name || c.username || 'Unknown';
+    var isSent = _sentInvites[c.peer_id];
+    var btnClass = isSent ? 'inv-send-btn sent' : 'inv-send-btn';
+    var btnLabel = isSent ? '✓ Sent' : 'Invite';
+    var vb = c.verified ? '<span class="vbadge"></span>' : '';
+    html += '<div class="inv-item" onclick="sendInvite(' + c.peer_id + ',\'' + esc(c.username) + '\',\'' + esc(displayName) + '\',\'' + esc(c.avatar||'') + '\',\'' + esc(bg) + '\')">' +
+      '<div class="inv-av" style="background:' + bg + '">' + av + '</div>' +
+      '<div class="inv-info"><div class="inv-nm">' + esc(displayName) + vb + '</div><div class="inv-un">@' + esc(c.username) + '</div></div>' +
+      '<button class="' + btnClass + '" id="inv-btn-' + c.peer_id + '" onclick="event.stopPropagation();sendInvite(' + c.peer_id + ',\'' + esc(c.username) + '\',\'' + esc(displayName) + '\',\'' + esc(c.avatar||'') + '\',\'' + esc(bg) + '\')">' + btnLabel + '</button>' +
+      '</div>';
+  });
+  il.innerHTML = html;
+}
+
+function filterInviteList(q) {
+  if (!q) { renderInviteList(_allConvos); return; }
+  var filtered = _allConvos.filter(function(c) {
+    var n = ((c.name || '') + ' ' + (c.username || '')).toLowerCase();
+    return n.indexOf(q.toLowerCase()) !== -1;
+  });
+  renderInviteList(filtered);
+}
+
+function esc(s) {
+  return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function sendInvite(uid, uname, name, avatar, avatarColor) {
+  if (_sentInvites[uid]) { toast('Already invited ' + name, ''); return; }
+  _sentInvites[uid] = true;
+  var btn = document.getElementById('inv-btn-' + uid);
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  // Save who we invited
+  vsUser = { id: uid, username: uname, name: name, avatar: avatar, avatar_color: avatarColor };
+  gameRoomId = 'room_' + (me && me.id) + '_' + uid + '_' + Date.now().toString(36);
+
+  fetch(API + '/api/game/invite', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target_id: uid, game_type: _invGame || 'ttt' })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      pendingInviteMsgId = d.message && d.message.id;
+      closeInvite();
+      showWaitingRoom(name || uname);
+      // Join game room on socket
+      if (socket) socket.emit('game_join_room', { token: token, room_id: gameRoomId });
+      // Emit invite_id + room_id via socket so peer can join same room
+      if (socket) {
+        socket.emit('game_invite_response', {
+          token: token,
+          invite_id: d.invite_id,
+          accepted: null, // null = this is the initial invite with room_id
+          target_id: uid,
+          room_id: gameRoomId,
+          is_invite: true
+        });
+      }
+      toast('Invite sent to ' + (name || uname) + '!', 'green');
+      // Poll for acceptance via API as fallback
+      var pollCount = 0;
+      clearInterval(waitPollTimer);
+      waitPollTimer = setInterval(function() {
+        pollCount++;
+        if (pollCount > 40) {
+          clearInterval(waitPollTimer);
+          if (document.getElementById('page-waiting').classList.contains('on')) {
+            showPage('page-lobby');
+            toast('No response. Invite expired.', 'red');
+          }
+        }
+        if (pendingInviteMsgId) {
+          fetch(API + '/api/messages/' + uid, { headers: { Authorization: 'Bearer ' + token } })
+          .then(function(r) { return r.json(); })
+          .then(function(msgs) {
+            if (!Array.isArray(msgs)) return;
+            var inv = msgs.find(function(m) { return m.id === pendingInviteMsgId; });
+            if (inv) {
+              try {
+                var data = JSON.parse(inv.content);
+                if (data.status === 'accepted') {
+                  clearInterval(waitPollTimer);
+                  setupVsHumanUI();
+                  startVsHuman();
+                  toast((name || uname) + ' accepted! Starting...', 'green');
+                } else if (data.status === 'declined') {
+                  clearInterval(waitPollTimer);
+                  showPage('page-lobby');
+                  toast((name || uname) + ' declined the invite.', 'red');
+                }
+              } catch(e) {}
+            }
+          }).catch(function() {});
+        }
+      }, 3000);
+    } else {
+      if (btn) { btn.textContent = 'Invite'; btn.disabled = false; }
+      _sentInvites[uid] = false;
+      toast(d.error || 'Failed to send invite', 'red');
+    }
+  })
+  .catch(function() {
+    if (btn) { btn.textContent = 'Invite'; btn.disabled = false; }
+    _sentInvites[uid] = false;
+    toast('Connection error. Try again.', 'red');
+  });
+}
+
+// Incoming invite (other user invites us)
+function showIncomingInvite(msg, data) {
+  var senderName = msg.sender_display || msg.sender_name || 'Someone';
+  var gameName = GAME_NAMES[data.game] || data.game || 'a game';
+  var gameIcon = GAME_ICONS[data.game] || '🎮';
+
+  // Show a persistent toast with action
+  var el = document.getElementById('toast');
+  el.innerHTML = gameIcon + ' <b>' + esc(senderName) + '</b> invited you to ' + gameName + '! ' +
+    '<button onclick="acceptInvite(' + msg.id + ',' + msg.sender_id + ',\'' + esc(senderName) + '\',\'' + esc(data.game || 'ttt') + '\')" ' +
+    'style="margin-left:8px;background:linear-gradient(135deg,#0095f6,#833AB4);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Accept</button> ' +
+    '<button onclick="declineInvite(' + msg.id + ',' + msg.sender_id + ')" ' +
+    'style="margin-left:4px;background:var(--bg3);color:var(--tx);border:1px solid var(--bd2);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Decline</button>';
+  el.className = 'toast on blue';
+  clearTimeout(_toastT);
+  _toastT = setTimeout(function() { el.className = 'toast'; el.innerHTML = ''; }, 15000);
+}
+
+window.acceptInvite = function(msgId, senderId, senderName, gameType) {
+  document.getElementById('toast').className = 'toast';
+  document.getElementById('toast').innerHTML = '';
+  // Respond API
+  fetch(API + '/api/game/respond', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ msg_id: msgId, accept: true })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      // Use the room_id sent by inviter via socket, or generate fallback
+      var realRoomId = window._pendingInviteRoomId || ('room_' + senderId + '_' + (me && me.id) + '_joined');
+      gameRoomId = realRoomId;
+      window._pendingInviteRoomId = null;
+
+      vsUser = { id: senderId, username: senderName, name: senderName };
+      myRole = 'O'; // Invitee is always O
+
+      // Join the game room
+      if (socket) {
+        socket.emit('game_join_room', { token: token, room_id: gameRoomId });
+      }
+
+      // Notify inviter that we accepted (with our room join)
+      if (socket) {
+        socket.emit('game_invite_response', {
+          token: token,
+          invite_id: d.game_data && d.game_data.invite_id,
+          accepted: true,
+          target_id: senderId,
+          room_id: gameRoomId
+        });
+      }
+
+      setupVsHumanUI();
+      startVsHuman();
+      toast('Game joined! You are O.', 'green');
+    }
+  })
+  .catch(function() { toast('Failed to accept. Try again.', 'red'); });
+};
+
+window.declineInvite = function(msgId, senderId) {
+  document.getElementById('toast').className = 'toast';
+  document.getElementById('toast').innerHTML = '';
+  fetch(API + '/api/game/respond', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ msg_id: msgId, accept: false })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (socket && senderId) {
+      socket.emit('game_invite_response', {
+        token: token,
+        accepted: false,
+        target_id: senderId,
+        invite_id: d.game_data && d.game_data.invite_id
+      });
+    }
+  })
+  .catch(function() {});
+};
+
+// ─── WAITING ROOM ─────────────────────────────────────────────────────────────
+function showWaitingRoom(oppName) {
+  // Setup my avatar
+  var myAv = document.getElementById('wait-my-av');
+  if (me && me.avatar) {
+    myAv.innerHTML = '<img src="' + me.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    myAv.style.background = 'transparent';
+  } else if (me) {
+    myAv.textContent = (me.name || me.username || 'Me')[0].toUpperCase();
+    myAv.style.background = me.avatar_color || '#0095f6';
+  }
+  // Setup opponent placeholder
+  var oppAv = document.getElementById('wait-opp-av');
+  oppAv.textContent = (oppName || '?')[0].toUpperCase();
+  oppAv.style.background = '#833AB4';
+
+  document.getElementById('wait-title').textContent = 'Waiting for ' + oppName + '...';
+  document.getElementById('wait-sub').textContent = 'Invite sent! Waiting for them to accept your challenge.';
+  showPage('page-waiting');
+}
+
+function cancelWaiting() {
+  clearInterval(waitPollTimer);
+  vsUser = null;
+  gameRoomId = null;
+  showPage('page-lobby');
+  toast('Invite cancelled', '');
+}
+
+// ─── GAME SETUP ───────────────────────────────────────────────────────────────
+function startVsBot(g) {
+  curGame = g;
+  vsBot = true;
+  vsUser = null;
+  myRole = 'X';
+  gameRoomId = null;
+
+  // UI
+  document.getElementById('ttt-title').textContent = 'Tic Tac Toe vs Bot';
+  document.getElementById('vs-p2-nm').textContent = 'Bot 🤖';
+  document.getElementById('vs-p2-av').innerHTML = '🤖';
+  document.getElementById('vs-p2-av').style.background = '#ed4956';
+  document.getElementById('s2-lbl').textContent = 'O (Bot)';
+  document.getElementById('chat-toggle-btn').style.display = 'none';
+  document.getElementById('game-chat-btn').style.display = 'none';
+  document.getElementById('opp-left-banner').classList.remove('on');
+
+  var myName = (me && (me.name || me.username)) || 'You';
+  document.getElementById('vs-p1-nm').textContent = myName;
+  document.getElementById('s1-lbl').textContent = 'X (' + myName.split(' ')[0] + ')';
+  setMyAvatar('vs-p1-av');
+
+  tttBoard = Array(9).fill(null); tttTurn = 'X'; tttOver = false;
+  tttScores = { X: 0, O: 0, D: 0 };
+  updScores(); updateVsScore();
+  renderBoard();
+  document.getElementById('ttt-status').textContent = 'Your turn (X)';
+  updateTurnHighlight();
+  closeResult();
+  showPage('page-ttt');
+}
+
+function setupVsHumanUI() {
+  if (!vsUser) return;
+  curGame = 'ttt';
+  var myName = (me && (me.name || me.username)) || 'You';
+  var oppName = vsUser.name || vsUser.username || 'Opponent';
+
+  document.getElementById('ttt-title').textContent = 'vs ' + oppName;
+  document.getElementById('vs-p1-nm').textContent = myRole === 'X' ? myName : oppName;
+  document.getElementById('vs-p2-nm').textContent = myRole === 'X' ? oppName : myName;
+  document.getElementById('s1-lbl').textContent = 'X (' + (myRole === 'X' ? myName.split(' ')[0] : oppName.split(' ')[0]) + ')';
+  document.getElementById('s2-lbl').textContent = 'O (' + (myRole === 'O' ? myName.split(' ')[0] : oppName.split(' ')[0]) + ')';
+
+  setMyAvatar(myRole === 'X' ? 'vs-p1-av' : 'vs-p2-av');
+  setOppAvatar(myRole === 'X' ? 'vs-p2-av' : 'vs-p1-av');
+
+  document.getElementById('chat-toggle-btn').style.display = 'flex';
+  document.getElementById('game-chat-btn').style.display = 'flex';
+  document.getElementById('opp-left-banner').classList.remove('on');
+  document.getElementById('gcp-msgs').innerHTML = '';
+  unreadChat = 0;
+  document.getElementById('chat-badge').classList.remove('on');
+  document.getElementById('chat-notif-dot').classList.remove('on');
+}
+
+function startVsHuman() {
+  vsBot = false;
+  tttBoard = Array(9).fill(null); tttTurn = 'X'; tttOver = false;
+  tttScores = { X: 0, O: 0, D: 0 };
+  updScores(); updateVsScore();
+  renderBoard();
+  var statusMsg = myRole === 'X' ? 'Your turn (X)' : 'Waiting for opponent (X goes first)...';
+  document.getElementById('ttt-status').textContent = statusMsg;
+  updateTurnHighlight();
+  closeResult();
+  showPage('page-ttt');
+}
+
+function setMyAvatar(elId) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  if (me && me.avatar) {
+    el.innerHTML = '<img src="' + me.avatar + '" alt="" onerror="this.style.display=\'none\'">';
+    el.style.background = me.avatar_color || '#0095f6';
+  } else if (me) {
+    el.textContent = (me.name || me.username || 'Y')[0].toUpperCase();
+    el.style.background = me.avatar_color || '#0095f6';
+  }
+}
+
+function setOppAvatar(elId) {
+  var el = document.getElementById(elId);
+  if (!el || !vsUser) return;
+  if (vsUser.avatar) {
+    el.innerHTML = '<img src="' + vsUser.avatar + '" alt="" onerror="this.style.display=\'none\'">';
+    el.style.background = vsUser.avatar_color || '#ed4956';
+  } else {
+    el.textContent = (vsUser.name || vsUser.username || '?')[0].toUpperCase();
+    el.style.background = vsUser.avatar_color || '#ed4956';
+  }
+}
+
+// ─── GAME LOGIC ───────────────────────────────────────────────────────────────
+function renderBoard() {
+  var b = document.getElementById('ttt-board');
+  b.innerHTML = '';
+  tttBoard.forEach(function(v, i) {
+    var cell = document.createElement('div');
+    var cls = 'ttt-cell';
+    if (v) cls += ' taken ' + (v === 'X' ? 'x-cell' : 'o-cell');
+    cell.className = cls;
+    if (v === 'X') { cell.innerHTML = '<span class="x-mark cell-pop">✕</span>'; }
+    else if (v === 'O') { cell.innerHTML = '<span class="o-mark cell-pop">○</span>'; }
+    if (!v && !tttOver) {
+      if (vsBot || myRole === tttTurn) {
+        (function(idx) { cell.onclick = function() { clickCell(idx); }; })(i);
+      }
+    }
+    b.appendChild(cell);
+  });
+}
+
+function clickCell(i) {
+  if (tttBoard[i] || tttOver) return;
+  if (!vsBot && myRole !== tttTurn) { toast('Wait for your turn!', ''); return; }
+
+  tttBoard[i] = tttTurn;
+  var win = checkWin();
+  renderBoard();
+
+  if (win) {
+    highlightWin(win);
+    tttOver = true;
+    var winMark = tttTurn;
+    tttScores[winMark]++;
+    updScores(); updateVsScore();
+
+    // Emit move to opponent
+    if (!vsBot && socket && gameRoomId) {
+      socket.emit('game_move', { token: token, room_id: gameRoomId, move: i, board: tttBoard, turn: tttTurn, scores: tttScores });
+    }
+    showResult(winMark);
+    return;
+  }
+
+  if (tttBoard.every(function(v) { return v; })) {
+    tttOver = true; tttScores.D++; updScores(); updateVsScore();
+    if (!vsBot && socket && gameRoomId) {
+      socket.emit('game_move', { token: token, room_id: gameRoomId, move: i, board: tttBoard, turn: tttTurn, scores: tttScores });
+    }
+    showResult('D');
+    return;
+  }
+
+  tttTurn = tttTurn === 'X' ? 'O' : 'X';
+
+  // Emit move before bot/status update
+  if (!vsBot && socket && gameRoomId) {
+    socket.emit('game_move', { token: token, room_id: gameRoomId, move: i, board: tttBoard, turn: tttTurn, scores: tttScores });
+    document.getElementById('ttt-status').textContent = 'Waiting for opponent...';
+  } else if (vsBot && tttTurn === 'O') {
+    document.getElementById('ttt-status').textContent = '🤖 Bot thinking...';
+    setTimeout(botMove, 380 + Math.random() * 200);
+  } else {
+    document.getElementById('ttt-status').textContent = myRole === tttTurn ? 'Your turn (' + tttTurn + ')' : 'Waiting for opponent...';
+  }
+  updateTurnHighlight();
+}
+
+function botMove() {
+  if (tttOver) return;
+  var move = getBotMove();
+  if (move === -1) return;
+  tttBoard[move] = 'O';
+  var win = checkWin();
+  renderBoard();
+  if (win) {
+    highlightWin(win);
+    tttOver = true;
+    tttScores.O++;
+    updScores(); updateVsScore();
+    showResult('O');
+    return;
+  }
+  if (tttBoard.every(function(v) { return v; })) {
+    tttOver = true; tttScores.D++; updScores(); updateVsScore();
+    showResult('D');
+    return;
+  }
+  tttTurn = 'X';
+  document.getElementById('ttt-status').textContent = 'Your turn (X)';
+  updateTurnHighlight();
+}
+
+function getBotMove() {
+  // Win
+  for (var i = 0; i < 9; i++) {
+    if (!tttBoard[i]) { tttBoard[i] = 'O'; if (checkWin()) { tttBoard[i] = null; return i; } tttBoard[i] = null; }
+  }
+  // Block
+  for (var i = 0; i < 9; i++) {
+    if (!tttBoard[i]) { tttBoard[i] = 'X'; if (checkWin()) { tttBoard[i] = null; return i; } tttBoard[i] = null; }
+  }
+  // Center
+  if (!tttBoard[4]) return 4;
+  // Corners
+  var corners = [0,2,6,8].filter(function(c) { return !tttBoard[c]; });
+  if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+  // Any
+  var avail = tttBoard.map(function(v, i) { return v ? -1 : i; }).filter(function(i) { return i >= 0; });
+  return avail.length ? avail[Math.floor(Math.random() * avail.length)] : -1;
+}
+
+function checkWin() {
+  for (var i = 0; i < WIN_COMBOS.length; i++) {
+    var combo = WIN_COMBOS[i];
+    var a = tttBoard[combo[0]], b = tttBoard[combo[1]], c = tttBoard[combo[2]];
+    if (a && a === b && b === c) return combo;
+  }
+  return null;
+}
+
+function highlightWin(combo) {
+  var cells = document.getElementById('ttt-board').children;
+  combo.forEach(function(i) { cells[i].classList.add('win'); });
+}
+
+function updScores() {
+  document.getElementById('s1-val').textContent = tttScores.X;
+  document.getElementById('s2-val').textContent = tttScores.O;
+  document.getElementById('sd-val').textContent = tttScores.D;
+}
+
+function updateVsScore() {
+  document.getElementById('vs-score').textContent = tttScores.X + ':' + tttScores.O;
+}
+
+function updateTurnHighlight() {
+  var p1 = document.getElementById('vs-p1-av');
+  var p2 = document.getElementById('vs-p2-av');
+  p1.classList.remove('active-x', 'active-o');
+  p2.classList.remove('active-x', 'active-o');
+  if (tttTurn === 'X') p1.classList.add('active-x');
+  else p2.classList.add('active-o');
+}
+
+// ─── RESULT ───────────────────────────────────────────────────────────────────
+function showResult(mark) {
+  var ov = document.getElementById('result-overlay');
+  var emoji = document.getElementById('result-emoji');
+  var title = document.getElementById('result-title');
+  var sub = document.getElementById('result-sub');
+
+  if (mark === 'D') {
+    emoji.textContent = '🤝';
+    title.textContent = "It's a Draw!";
+    sub.textContent = 'Great match! Play again?';
+    toast("Draw! 🤝", '');
+  } else {
+    var isWin = vsBot ? mark === 'X' : mark === myRole;
+    if (isWin) {
+      emoji.textContent = '🏆';
+      title.textContent = 'You Won!';
+      sub.textContent = 'Excellent strategy!';
+      toast('🎉 You won!', 'green');
+    } else {
+      emoji.textContent = '😔';
+      title.textContent = vsBot ? 'Bot Wins!' : 'Opponent Wins!';
+      sub.textContent = 'Better luck next time!';
+      toast(vsBot ? 'Bot wins!' : 'Opponent wins!', 'red');
+    }
+  }
+  ov.classList.add('on');
+}
+
+function closeResult() {
+  document.getElementById('result-overlay').classList.remove('on');
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────────────
+function requestReset() {
+  closeResult();
+  tttBoard = Array(9).fill(null); tttTurn = 'X'; tttOver = false;
+  renderBoard();
+
+  if (vsBot) {
+    document.getElementById('ttt-status').textContent = 'Your turn (X)';
+    updateTurnHighlight();
+  } else {
+    if (socket && gameRoomId) socket.emit('game_reset', { token: token, room_id: gameRoomId });
+    document.getElementById('ttt-status').textContent = myRole === 'X' ? 'Your turn (X)' : 'Waiting for opponent...';
+    updateTurnHighlight();
+  }
+}
+
+// ─── EXIT ─────────────────────────────────────────────────────────────────────
+function confirmExit() {
+  var isInGame = document.getElementById('page-ttt').classList.contains('on') || document.getElementById('page-waiting').classList.contains('on');
+  if (!isInGame) { showPage('page-lobby'); return; }
+  var subText = vsBot ? 'Your progress will be lost.' : 'Your opponent will be notified that you left.';
+  document.getElementById('exit-sub').textContent = subText;
+  document.getElementById('exit-overlay').classList.add('on');
+}
+
+function closeExitConfirm() {
+  document.getElementById('exit-overlay').classList.remove('on');
+}
+
+function doExit() {
+  closeExitConfirm();
+  closeResult();
+  clearInterval(waitPollTimer);
+  if (!vsBot && socket && gameRoomId) {
+    socket.emit('game_exit', { token: token, room_id: gameRoomId });
+  }
+  tttBoard = Array(9).fill(null); tttTurn = 'X'; tttOver = false;
+  tttScores = { X: 0, O: 0, D: 0 };
+  vsUser = null; vsBot = true; gameRoomId = null; myRole = 'X';
+  closeChatPanel();
+  showPage('page-lobby');
+}
+
+// ─── CHAT ─────────────────────────────────────────────────────────────────────
+function toggleChat() {
+  chatOpen = !chatOpen;
+  var panel = document.getElementById('game-chat-panel');
+  var mainArea = document.getElementById('ttt-main');
+  if (chatOpen) {
+    panel.classList.add('open');
+    mainArea.classList.add('chat-open');
+    unreadChat = 0;
+    document.getElementById('chat-badge').classList.remove('on');
+    document.getElementById('chat-notif-dot').classList.remove('on');
+    setTimeout(function() { scrollChatToBottom(); document.getElementById('gcp-input').focus(); }, 100);
+  } else {
+    panel.classList.remove('open');
+    mainArea.classList.remove('chat-open');
+  }
+}
+
+function closeChatPanel() {
+  chatOpen = false;
+  document.getElementById('game-chat-panel').classList.remove('open');
+  document.getElementById('ttt-main').classList.remove('chat-open');
+}
+
+function sendGameChat() {
+  var input = document.getElementById('gcp-input');
+  var msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  var myName = (me && (me.name || me.username)) || 'You';
+  appendChatMsg('You', msg, true);
+  if (socket && gameRoomId) {
+    socket.emit('game_chat', { token: token, room_id: gameRoomId, message: msg });
+  }
+}
+
+function appendChatMsg(name, text, isMine) {
+  var msgs = document.getElementById('gcp-msgs');
+  var d = document.createElement('div');
+  d.className = 'gcm ' + (isMine ? 'mine' : 'theirs');
+  if (!isMine) d.innerHTML = '<div class="gcm-name">' + esc(name) + '</div>';
+  d.innerHTML += '<div class="gcm-text">' + esc(text) + '</div>';
+  msgs.appendChild(d);
+  scrollChatToBottom();
+}
+
+function scrollChatToBottom() {
+  var msgs = document.getElementById('gcp-msgs');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ─── RENDER INIT ──────────────────────────────────────────────────────────────
+renderBoard();
+updateTurnHighlight();
+</script>
+</body>
+</html>

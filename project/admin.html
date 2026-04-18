@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CaChat Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#f0f0f0;font-family:system-ui,sans-serif;font-size:14px}
+.login-pg{max-width:360px;margin:80px auto;background:#111;border:1px solid #222;border-radius:14px;padding:32px}
+.login-pg h2{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px;color:#0095f6}
+.login-pg p{font-size:12px;color:#555;text-align:center;margin-bottom:22px}
+.top{background:#111;border-bottom:1px solid #1e1e1e;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.logo{font-size:18px;font-weight:800;color:#0095f6}
+.tabs{display:flex;gap:4px;padding:10px 20px;background:#0d0d0d;border-bottom:1px solid #1e1e1e;flex-wrap:wrap;position:sticky;top:45px;z-index:40}
+.tab{padding:6px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:#888}
+.tab:hover{background:#222;color:#ccc}
+.tab.on{background:#0095f6;border-color:#0095f6;color:#fff}
+.body{padding:20px;max-width:1400px;margin:0 auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+.stat{background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:14px;text-align:center}
+.stat-n{font-size:24px;font-weight:700;color:#0095f6}
+.stat-l{font-size:11px;color:#555;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;background:#161616;border:1px solid #2a2a2a;border-radius:8px;padding:9px 12px;color:#f0f0f0;font-size:13px;outline:none}
+.fi:focus{border-color:#0095f6}
+.fi::placeholder{color:#444}
+.inp-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap}
+.inp-g{display:flex;flex-direction:column;gap:4px}
+.inp-g label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.btn{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.82}
+.btn-b{background:#0095f6;color:#fff}.btn-r{background:#ed4956;color:#fff}.btn-g{background:#1e1e1e;color:#888;border:1px solid #2a2a2a}.btn-gr{background:#1db954;color:#fff}.btn-or{background:#f7971e;color:#fff}.btn-pu{background:#833AB4;color:#fff}
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #1e1e1e}
+table{width:100%;border-collapse:collapse;background:#111;font-size:12px;min-width:1000px}
+th{background:#161616;padding:9px 12px;text-align:left;color:#555;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1e1e1e;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #161616;vertical-align:middle;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#131313}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.3px}
+.bv{background:#0095f615;color:#0095f6;border:1px solid #0095f625}
+.bb{background:#ed495615;color:#ed4956;border:1px solid #ed495625}
+.bs{background:#f7971e15;color:#f7971e;border:1px solid #f7971e25}
+.bo{background:#1db95415;color:#1db954;border:1px solid #1db95425}
+.bfk{background:#833AB415;color:#c77dff;border:1px solid #833AB425}
+.pw{font-family:monospace;font-size:10px;background:#161616;padding:2px 7px;border-radius:4px;cursor:pointer;word-break:break-all;white-space:normal;max-width:170px;display:inline-block;line-height:1.6;border:1px solid #2a2a2a}
+.pw:hover{background:#1e1e1e}
+.pwl{color:#4db6f7}.pwa{color:#1db954}.pwp{color:#f7971e}
+.av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;overflow:hidden;vertical-align:middle}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.card{background:#111;border:1px solid #1e1e1e;border-radius:12px;padding:18px;margin-bottom:16px}
+.card h3{font-size:13px;font-weight:700;margin-bottom:14px;color:#ccc;display:flex;align-items:center;gap:8px}
+.acts{display:flex;gap:3px;flex-wrap:wrap}
+.search-bar{background:#161616;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px;color:#f0f0f0;width:100%;max-width:300px;margin-bottom:14px;font-size:13px;outline:none}
+.toast{position:fixed;bottom:20px;right:20px;background:#1c1c1c;border:1px solid #333;padding:10px 16px;border-radius:8px;font-size:13px;z-index:9999;display:none;max-width:300px}
+.toast.on{display:block}
+.toast.ok{border-color:#1db95460;color:#1db954}
+.toast.er{border-color:#ed495660;color:#ed4956}
+.prog{height:4px;background:#1e1e1e;border-radius:99px;overflow:hidden;margin-top:8px}
+.progf{height:100%;background:#0095f6;border-radius:99px;transition:width .3s;width:0%}
+.log{background:#080808;border:1px solid #1e1e1e;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;max-height:260px;overflow-y:auto;line-height:1.8;white-space:pre-wrap;margin-top:10px}
+.log .ok2{color:#1db954}.log .er2{color:#ed4956}.log .in2{color:#555}
+</style>
+</head>
+<body>
+<div id="pg-login" class="login-pg">
+  <h2>⚡ CaChat Admin</h2>
+  <p>Super admin panel — handle with care</p>
+  <input class="fi" id="au" placeholder="Admin username" style="margin-bottom:8px"/>
+  <input class="fi" type="password" id="ap" placeholder="Admin password" style="margin-bottom:14px"/>
+  <button class="btn btn-b" style="width:100%;padding:10px;font-size:14px" onclick="doLogin()">Login</button>
+  <div id="lerr" style="color:#ed4956;font-size:12px;text-align:center;margin-top:10px"></div>
+</div>
+<div id="pg-admin" style="display:none">
+  <div class="top">
+    <span class="logo">⚡ CaChat Admin</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="top-info" style="font-size:12px;color:#444"></span>
+      <button class="btn btn-g" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab on" onclick="showTab('users')">👥 Users</div>
+    <div class="tab" onclick="showTab('generate')">🤖 Generate</div>
+    <div class="tab" onclick="showTab('fake')">📈 Fake Activity</div>
+    <div class="tab" onclick="showTab('messages')">💬 Messages</div>
+    <div class="tab" onclick="showTab('reports')">🚨 Reports</div>
+    <div class="tab" onclick="showTab('tools')">🛠 Tools</div>
+  </div>
+  <div class="body">
+
+    <!-- USERS -->
+    <div id="tab-users">
+      <div class="stats" id="stats-grid"></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <input class="search-bar" id="user-search" placeholder="🔍 Search username or name…" oninput="filterUsers()" style="margin-bottom:0"/>
+        <select class="fi" id="user-filter" onchange="filterUsers()" style="width:160px">
+          <option value="all">All Users</option>
+          <option value="verified">Verified Only</option>
+          <option value="banned">Banned</option>
+          <option value="suspended">Suspended</option>
+        </select>
+        <button class="btn btn-b" onclick="loadUsers()">↻ Refresh</button>
+      </div>
+      <div class="tbl-wrap" id="users-table"></div>
+    </div>
+
+    <!-- GENERATE -->
+    <div id="tab-generate" style="display:none">
+      <div class="card">
+        <h3>🤖 Single Fake Account</h3>
+        <div class="inp-row">
+          <div class="inp-g"><label>Username</label><input class="fi" id="fa-un" placeholder="username" style="width:150px"/></div>
+          <div class="inp-g"><label>Name</label><input class="fi" id="fa-nm" placeholder="Full Name" style="width:170px"/></div>
+          <div class="inp-g"><label>Password</label><input class="fi" id="fa-pw" placeholder="password" style="width:140px"/></div>
+          <div class="inp-g"><label>Verified?</label>
+            <select class="fi" id="fa-vf" style="width:110px"><option value="0">No</option><option value="1">Yes ✅</option></select>
+          </div>
+          <button class="btn btn-gr" onclick="generateFake()" style="margin-bottom:0">Create</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🚀 Bulk Generate (Indian Names)</h3>
+        <div class="inp-row">
+          <div class="inp-g"><label>Count</label><input class="fi" id="bk-cnt" type="number" value="10" min="1" max="100" style="width:90px"/></div>
+          <div class="inp-g"><label>Password (all)</label><input class="fi" id="bk-pw" value="cachat123" style="width:160px"/></div>
+          <div class="inp-g"><label>Verified?</label>
+            <select class="fi" id="bk-vf" style="width:110px"><option value="0">No</option><option value="1">Yes ✅</option></select>
+          </div>
+          <button class="btn btn-gr" onclick="bulkGenerate()" style="margin-bottom:0">🚀 Generate</button>
+        </div>
+        <div class="prog"><div class="progf" id="bk-prog"></div></div>
+        <div class="log" id="bk-log"><span class="in2">Ready…</span></div>
+      </div>
+    </div>
+
+    <!-- FAKE ACTIVITY -->
+    <div id="tab-fake" style="display:none">
+      <div class="card">
+        <h3>📈 Fake Followers (Display Only)</h3>
+        <p style="font-size:12px;color:#555;margin-bottom:14px">Adds fake number to follower count. Shown on profile. Not real accounts.</p>
+        <div class="inp-row">
+          <div class="inp-g"><label>User ID</label><input class="fi" id="ff-uid" placeholder="User ID" style="width:110px"/></div>
+          <div class="inp-g"><label>Count</label><input class="fi" id="ff-cnt" type="number" placeholder="e.g. 5000" style="width:160px"/></div>
+          <button class="btn btn-gr" onclick="setFakeF()" style="margin-bottom:0">Set Fake Followers</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>👥 Add Fake Group Members</h3>
+        <p style="font-size:12px;color:#555;margin-bottom:14px">Creates fake accounts and adds them to a group.</p>
+        <div class="inp-row">
+          <div class="inp-g"><label>Group ID</label><input class="fi" id="fg-gid" placeholder="Group ID" style="width:110px"/></div>
+          <div class="inp-g"><label>Count</label><input class="fi" id="fg-cnt" type="number" value="5" min="1" max="50" style="width:90px"/></div>
+          <button class="btn btn-gr" onclick="addFakeGroupMembers()" style="margin-bottom:0">Add</button>
+        </div>
+        <div class="prog"><div class="progf" id="fg-prog"></div></div>
+        <div class="log" id="fg-log" style="display:none"></div>
+      </div>
+      <div class="card">
+        <h3>🟢 Auto-Ping (Keep Fake Accounts Active)</h3>
+        <p style="font-size:12px;color:#555;margin-bottom:14px">Periodically pings server for fake accounts so they show as recently active.</p>
+        <div class="inp-row">
+          <div class="inp-g"><label>User IDs (comma separated)</label><input class="fi" id="pi-ids" placeholder="5,6,7,8,9" style="width:280px"/></div>
+          <div class="inp-g"><label>Every (minutes)</label><input class="fi" id="pi-min" type="number" value="5" min="1" max="60" style="width:100px"/></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-gr" id="pi-start" onclick="startPing()">▶ Start</button>
+          <button class="btn btn-r" onclick="stopPing()">⏹ Stop</button>
+        </div>
+        <div id="pi-status" style="font-size:12px;color:#444;margin-top:8px">Not running</div>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div id="tab-messages" style="display:none">
+      <div class="card">
+        <h3>📢 Broadcast to All Users</h3>
+        <div class="inp-row">
+          <div class="inp-g"><label>Title</label><input class="fi" id="bc-ti" placeholder="Title" style="width:180px"/></div>
+          <div class="inp-g"><label>Message</label><input class="fi" id="bc-bo" placeholder="Message" style="width:280px"/></div>
+          <div class="inp-g"><label>Type</label>
+            <select class="fi" id="bc-ty" style="width:130px"><option value="info">ℹ️ Info</option><option value="warning">⚠️ Warning</option><option value="success">✅ Success</option><option value="broadcast">📢 Broadcast</option></select>
+          </div>
+          <button class="btn btn-b" onclick="doBroadcast()" style="margin-bottom:0">Send All</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🔔 Notify Single User</h3>
+        <div class="inp-row">
+          <div class="inp-g"><label>User ID</label><input class="fi" id="sn-uid" placeholder="ID" style="width:80px"/></div>
+          <div class="inp-g"><label>Title</label><input class="fi" id="sn-ti" placeholder="Title" style="width:180px"/></div>
+          <div class="inp-g"><label>Message</label><input class="fi" id="sn-bo" placeholder="Body" style="width:250px"/></div>
+          <button class="btn btn-b" onclick="doNotify()" style="margin-bottom:0">Send</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🗑️ Delete User's Messages</h3>
+        <div class="inp-row">
+          <div class="inp-g"><label>User ID</label><input class="fi" id="dm-uid" placeholder="User ID" style="width:120px"/></div>
+          <button class="btn btn-r" onclick="delMsgs()" style="margin-bottom:0">Delete All Messages</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div id="tab-reports" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span style="font-size:13px;font-weight:600;color:#666">User Reports</span>
+        <button class="btn btn-g" onclick="loadReports()">↻ Refresh</button>
+      </div>
+      <div class="tbl-wrap" id="reports-table"></div>
+    </div>
+
+    <!-- TOOLS -->
+    <div id="tab-tools" style="display:none">
+      <div class="card">
+        <h3>⏸️ Suspend / Unsuspend</h3>
+        <div class="inp-row">
+          <div class="inp-g"><label>User ID</label><input class="fi" id="su-uid" placeholder="ID" style="width:100px"/></div>
+          <div class="inp-g"><label>Days (0=remove)</label><input class="fi" id="su-days" type="number" placeholder="Days" style="width:110px"/></div>
+          <div class="inp-g"><label>Reason</label><input class="fi" id="su-reason" placeholder="Reason" style="width:200px"/></div>
+          <button class="btn btn-or" onclick="doSuspend()" style="margin-bottom:0">Apply</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🔐 Reset App Password</h3>
+        <div class="inp-row">
+          <div class="inp-g"><label>User ID</label><input class="fi" id="ra-uid" placeholder="ID" style="width:120px"/></div>
+          <button class="btn btn-b" onclick="resetAppPwd()" style="margin-bottom:0">Reset</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>✅ Verify / Unverify</h3>
+        <div class="inp-row">
+          <div class="inp-g"><label>User ID</label><input class="fi" id="vf-uid" placeholder="ID" style="width:120px"/></div>
+          <div class="inp-g"><label>Action</label>
+            <select class="fi" id="vf-act" style="width:150px"><option value="1">✅ Verify</option><option value="0">❌ Unverify</option></select>
+          </div>
+          <button class="btn btn-b" onclick="doVerify()" style="margin-bottom:0">Apply</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🧹 Cleanup Old Messages</h3>
+        <p style="font-size:12px;color:#555;margin-bottom:12px">Delete messages from non-verified users older than 2 days.</p>
+        <button class="btn btn-r" onclick="doClean()">Run Cleanup</button>
+      </div>
+      <div class="stats" id="stats-grid2" style="margin-top:16px"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const API='';
+let adminUser='',adminPass='',allUsers=[],allReports=[],pingTimer=null;
+
+async function doLogin(){
+  adminUser=document.getElementById('au').value.trim();
+  adminPass=document.getElementById('ap').value.trim();
+  if(!adminUser||!adminPass){document.getElementById('lerr').textContent='Fill fields';return;}
+  try{
+    await aFetch('/api/admin/stats');
+    document.getElementById('pg-login').style.display='none';
+    document.getElementById('pg-admin').style.display='block';
+    loadUsers();setInterval(fetchStats,30000);
+  }catch{document.getElementById('lerr').textContent='Wrong credentials';}
+}
+document.getElementById('ap').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+function doLogout(){adminUser='';adminPass='';document.getElementById('pg-login').style.display='block';document.getElementById('pg-admin').style.display='none';}
+function headers(){return{'Content-Type':'application/json','x-admin-user':adminUser,'x-admin-pass':adminPass};}
+async function aFetch(path,method='GET',body=null){const o={method,headers:headers()};if(body)o.body=JSON.stringify(body);const r=await fetch(API+path,o);const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');return d;}
+
+function showTab(t){
+  ['users','generate','fake','messages','reports','tools'].forEach(x=>{document.getElementById('tab-'+x).style.display=x===t?'block':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('on',['users','generate','fake','messages','reports','tools'][i]===t);});
+  if(t==='reports')loadReports();
+  if(t==='tools')fetchStats();
+}
+
+async function fetchStats(){
+  try{
+    const s=await aFetch('/api/admin/stats');
+    const html=`<div class="stat"><div class="stat-n">${s.totalUsers}</div><div class="stat-l">Users</div></div><div class="stat"><div class="stat-n">${s.totalMessages}</div><div class="stat-l">Messages</div></div><div class="stat"><div class="stat-n">${s.totalPosts}</div><div class="stat-l">Posts</div></div><div class="stat"><div class="stat-n">${s.totalGroups||0}</div><div class="stat-l">Groups</div></div><div class="stat"><div class="stat-n">${s.totalReports||0}</div><div class="stat-l">Reports</div></div><div class="stat"><div class="stat-n">${s.dbSizeMB}MB</div><div class="stat-l">DB Size</div></div>`;
+    const g=document.getElementById('stats-grid');if(g)g.innerHTML=html;
+    const g2=document.getElementById('stats-grid2');if(g2)g2.innerHTML=html;
+    document.getElementById('top-info').textContent=`${s.totalUsers} users · ${s.totalMessages} msgs · ${s.dbSizeMB}MB`;
+  }catch{}
+}
+
+async function loadUsers(){
+  try{allUsers=await aFetch('/api/admin/users');renderUsers(allUsers);fetchStats();}catch(e){toast(e.message,false);}
+}
+function filterUsers(){
+  const q=document.getElementById('user-search').value.toLowerCase();
+  const f=document.getElementById('user-filter').value;
+  const now=Math.floor(Date.now()/1000);
+  renderUsers(allUsers.filter(u=>{
+    const mq=!q||u.username.toLowerCase().includes(q)||(u.name||'').toLowerCase().includes(q);
+    if(!mq)return false;
+    if(f==='verified')return u.verified;if(f==='banned')return u.banned;if(f==='suspended')return u.suspended_until>now;
+    return true;
+  }));
+}
+function renderUsers(users){
+  const now=Math.floor(Date.now()/1000);
+  document.getElementById('users-table').innerHTML=`<table><thead><tr>
+    <th>ID</th><th>Av</th><th>Username</th><th>Name</th>
+    <th>🔑 Login PW Hash</th><th>🔐 App PW</th><th>🔒 Privacy PIN</th>
+    <th>Status</th><th>Phone</th><th>Email</th><th>Fake Followers</th><th>Joined</th><th>Actions</th>
+  </tr></thead><tbody>${users.map(u=>{
+    const av=u.avatar?`<div class="av"><img src="${u.avatar}"></div>`:`<div class="av" style="background:${u.avatar_color||'#833AB4'}">${(u.name||u.username||'?')[0].toUpperCase()}</div>`;
+    const isSus=u.suspended_until>now;
+    const status=u.banned?`<span class="badge bb">🔨 Banned</span>`:isSus?`<span class="badge bs">⏸ Suspended</span>`:u.verified?`<span class="badge bv">✅ Verified</span>`:`<span class="badge bo">Active</span>`;
+    const lpw=`<span class="pw pwl" onclick="copyPw('${h(u.password)}')" title="Click to copy">${h(u.password).slice(0,22)}…</span>`;
+    const apw=u.app_password?`<span class="pw pwa" onclick="copyPw('${h(u.app_password)}')" title="Click to copy">${h(u.app_password).slice(0,18)}…<br><small style="color:#555;font-size:9px">SET ✅</small></span>`:`<span style="color:#333;font-size:11px">not set</span>`;
+    const ppw=u.privacy_pin?`<span class="pw pwp" onclick="copyPw('${h(u.privacy_pin)}')" title="Click to copy">${h(u.privacy_pin).slice(0,18)}…<br><small style="color:#555;font-size:9px">SET ✅</small></span>`:`<span style="color:#333;font-size:11px">not set</span>`;
+    const ff=u.fake_followers>0?`<span class="badge bfk">+${u.fake_followers}</span>`:`<span style="color:#333">0</span>`;
+    return `<tr><td style="color:#444">${u.id}</td><td>${av}</td>
+      <td><strong style="color:#e0e0e0">@${h(u.username)}</strong></td>
+      <td style="color:#888">${h(u.name||'')}</td>
+      <td>${lpw}</td><td>${apw}</td><td>${ppw}</td>
+      <td>${status}</td>
+      <td style="color:#555">${h(u.phone||'—')}</td>
+      <td style="color:#555">${h(u.gmail||u.email||'—')}</td>
+      <td>${ff}</td>
+      <td style="color:#444;font-size:11px">${fmtDate(u.created_at)}</td>
+      <td><div class="acts">
+        <button class="btn btn-b" onclick="toggleVerify(${u.id},${u.verified?1:0})">${u.verified?'Unverify':'✅ Verify'}</button>
+        <button class="btn ${u.banned?'btn-gr':'btn-r'}" onclick="toggleBan(${u.id},${u.banned?1:0})">${u.banned?'Unban':'🔨 Ban'}</button>
+        <button class="btn btn-or" onclick="qSuspend(${u.id})" title="Suspend">⏸</button>
+        <button class="btn btn-g" onclick="resetAppPwdQ(${u.id})" title="Reset app password">🔐</button>
+        <button class="btn btn-pu" onclick="qFakeF(${u.id})" title="Fake followers">📈</button>
+        <button class="btn btn-r" onclick="delUser(${u.id},'${h(u.username)}')">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+function copyPw(pw){navigator.clipboard.writeText(pw).then(()=>toast('Copied! ✅',true)).catch(()=>toast('Copy failed',false));}
+async function toggleVerify(id,cur){try{await aFetch(`/api/admin/verify/${id}`,'POST',{verified:!cur});toast(cur?'Unverified':'Verified ✅',true);loadUsers();}catch(e){toast(e.message,false);}}
+async function toggleBan(id,cur){if(!cur){const r=prompt('Ban reason:');if(r===null)return;await aFetch(`/api/admin/ban/${id}`,'POST',{ban:true,reason:r||''}).then(()=>{toast('Banned',true);loadUsers();}).catch(e=>toast(e.message,false));}else{await aFetch(`/api/admin/ban/${id}`,'POST',{ban:false}).then(()=>{toast('Unbanned',true);loadUsers();}).catch(e=>toast(e.message,false));}}
+async function delUser(id,un){if(!confirm(`Delete @${un}? All data gone.`))return;try{await aFetch(`/api/admin/user/${id}`,'DELETE');toast('Deleted',true);loadUsers();}catch(e){toast(e.message,false);}}
+async function resetAppPwdQ(id){if(!confirm('Reset app password for this user?'))return;try{await aFetch(`/api/admin/reset-app-password/${id}`,'POST');toast('App PW reset ✅',true);}catch(e){toast(e.message,false);}}
+function qFakeF(id){const c=prompt('Set fake followers count (0=remove):');if(c===null)return;aFetch(`/api/admin/set-fake-followers/${id}`,'POST',{count:parseInt(c)||0}).then(()=>{toast('Set ✅',true);loadUsers();}).catch(e=>toast(e.message,false));}
+function qSuspend(id){const d=prompt('Suspend for how many days? (0=unsuspend)');if(d===null)return;const r=parseInt(d)>0?prompt('Reason?'):'';aFetch(`/api/admin/suspend/${id}`,'POST',{days:parseInt(d)||0,reason:r||''}).then(()=>{toast(parseInt(d)>0?`Suspended ${d}d`:'Unsuspended',true);loadUsers();}).catch(e=>toast(e.message,false));}
+
+/* TOOLS */
+async function doSuspend(){const uid=document.getElementById('su-uid').value,days=document.getElementById('su-days').value,reason=document.getElementById('su-reason').value;if(!uid)return toast('Enter ID',false);try{await aFetch(`/api/admin/suspend/${uid}`,'POST',{days:parseInt(days)||0,reason:reason||''});toast(parseInt(days)>0?`Suspended ${days}d ✅`:'Unsuspended ✅',true);}catch(e){toast(e.message,false);}}
+async function resetAppPwd(){const uid=document.getElementById('ra-uid').value;if(!uid)return toast('Enter ID',false);try{await aFetch(`/api/admin/reset-app-password/${uid}`,'POST');toast('Reset ✅',true);}catch(e){toast(e.message,false);}}
+async function doVerify(){const uid=document.getElementById('vf-uid').value,act=document.getElementById('vf-act').value==='1';if(!uid)return toast('Enter ID',false);try{await aFetch(`/api/admin/verify/${uid}`,'POST',{verified:act});toast(act?'Verified ✅':'Unverified',true);loadUsers();}catch(e){toast(e.message,false);}}
+async function doClean(){if(!confirm('Clean old non-verified messages?'))return;try{await aFetch('/api/admin/clean','POST');toast('Cleaned ✅',true);}catch(e){toast(e.message,false);}}
+
+/* MESSAGES */
+async function doBroadcast(){const title=document.getElementById('bc-ti').value,body=document.getElementById('bc-bo').value,type=document.getElementById('bc-ty').value;if(!title||!body)return toast('Fill fields',false);try{const r=await aFetch('/api/admin/broadcast','POST',{title,body,type});toast(`Sent to ${r.sent} users ✅`,true);}catch(e){toast(e.message,false);}}
+async function doNotify(){const uid=document.getElementById('sn-uid').value,title=document.getElementById('sn-ti').value,body=document.getElementById('sn-bo').value;if(!uid||!title||!body)return toast('Fill all fields',false);try{await aFetch(`/api/admin/notify/${uid}`,'POST',{title,body});toast('Sent ✅',true);}catch(e){toast(e.message,false);}}
+async function delMsgs(){const uid=document.getElementById('dm-uid').value;if(!uid)return toast('Enter ID',false);if(!confirm('Delete all messages?'))return;try{await aFetch(`/api/admin/messages/${uid}`,'DELETE');toast('Deleted ✅',true);}catch(e){toast(e.message,false);}}
+
+/* REPORTS */
+async function loadReports(){
+  allReports=await aFetch('/api/admin/reports').catch(()=>[]);
+  const el=document.getElementById('reports-table');
+  if(!allReports.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#333">No reports</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>ID</th><th>Reporter</th><th>Reported</th><th>Reason</th><th>Date</th><th>Actions</th></tr></thead><tbody>${allReports.map(r=>`<tr><td style="color:#444">${r.id}</td><td>@${h(r.reporter)}</td><td><strong>@${h(r.reported)}</strong></td><td>${h(r.reason)}</td><td style="color:#444;font-size:11px">${fmtDate(r.created_at)}</td><td><div class="acts"><button class="btn btn-r" onclick="banFromReport(${r.reported_id},'${h(r.reported)}')">Ban</button></div></td></tr>`).join('')}</tbody></table>`;
+}
+async function banFromReport(id,un){if(!confirm(`Ban @${un}?`))return;try{await aFetch(`/api/admin/ban/${id}`,'POST',{ban:true,reason:'Reported by users'});toast('Banned',true);}catch(e){toast(e.message,false);}}
+
+/* GENERATE */
+const FN=['Aryan','Rahul','Priya','Neha','Rohit','Anjali','Vikram','Kavya','Amit','Sneha','Raj','Pooja','Dev','Riya','Karan','Nisha','Aditya','Simran','Vivek','Meera','Akash','Divya','Siddharth','Tanya','Nikhil','Shreya','Rohan','Komal','Abhinav','Swati','Manish','Aarti','Kunal','Pallavi','Harsh','Ankita','Sachin','Bhavna','Mohit','Sonali','Deepak','Ritika'];
+const LN=['Sharma','Verma','Singh','Patel','Gupta','Kumar','Joshi','Mehta','Agarwal','Yadav','Mishra','Chauhan','Tiwari','Pandey','Shah','Nair','Iyer','Reddy','Bose','Ghosh','Das','Roy'];
+function rUser(){const f=FN[Math.floor(Math.random()*FN.length)],l=LN[Math.floor(Math.random()*LN.length)],n=Math.floor(Math.random()*9999)+1;return{name:`${f} ${l}`,username:`${f.toLowerCase()}${l.toLowerCase()}${n}`};}
+
+async function generateFake(){
+  const un=document.getElementById('fa-un').value.trim(),nm=document.getElementById('fa-nm').value.trim(),pw=document.getElementById('fa-pw').value.trim(),vf=document.getElementById('fa-vf').value==='1';
+  if(!un||!pw)return toast('Username and password required',false);
+  try{const r=await aFetch('/api/admin/generate-fake','POST',{username:un,name:nm||un,password:pw,verified:vf});toast(`@${un} created! ID:${r.id} ✅`,true);document.getElementById('fa-un').value='';document.getElementById('fa-nm').value='';document.getElementById('fa-pw').value='';loadUsers();}catch(e){toast(e.message,false);}
+}
+async function bulkGenerate(){
+  const count=parseInt(document.getElementById('bk-cnt').value)||10,pw=document.getElementById('bk-pw').value||'cachat123',vf=document.getElementById('bk-vf').value==='1';
+  const logEl=document.getElementById('bk-log'),prog=document.getElementById('bk-prog');
+  logEl.innerHTML='';prog.style.width='0%';
+  addLog(logEl,`Generating ${count} accounts…`,'in2');
+  let ok=0,fail=0;
+  for(let i=0;i<count;i++){
+    let{name,username}=rUser();let done=false;
+    for(let a=0;a<3;a++){
+      try{const r=await aFetch('/api/admin/generate-fake','POST',{username,name,password:pw,verified:vf?1:0});ok++;addLog(logEl,`✅ [${i+1}/${count}] @${username} — "${name}" (ID:${r.id})`,'ok2');done=true;break;}
+      catch(e){if(e.message.includes('taken')){const u=rUser();username=u.username;name=u.name;}else{fail++;addLog(logEl,`❌ [${i+1}/${count}] ${e.message}`,'er2');done=true;break;}}
+    }
+    if(!done){fail++;addLog(logEl,`❌ [${i+1}/${count}] Skipped`,'er2');}
+    prog.style.width=((i+1)/count*100)+'%';await sleep(250);
+  }
+  addLog(logEl,`\nDone! ✅ ${ok} created  ❌ ${fail} failed\nPassword: ${pw}`,'ok2');
+  loadUsers();
+}
+
+/* FAKE FOLLOWERS */
+async function setFakeF(){const uid=document.getElementById('ff-uid').value,cnt=document.getElementById('ff-cnt').value;if(!uid||!cnt)return toast('Fill both fields',false);try{await aFetch(`/api/admin/set-fake-followers/${uid}`,'POST',{count:parseInt(cnt)||0});toast(`Set ${cnt} fake followers ✅`,true);loadUsers();}catch(e){toast(e.message,false);}}
+
+/* FAKE GROUP MEMBERS */
+async function addFakeGroupMembers(){
+  const gid=document.getElementById('fg-gid').value,count=parseInt(document.getElementById('fg-cnt').value)||5;
+  if(!gid)return toast('Enter group ID',false);
+  const logEl=document.getElementById('fg-log'),prog=document.getElementById('fg-prog');
+  logEl.style.display='block';logEl.innerHTML='';prog.style.width='0%';
+  addLog(logEl,`Adding ${count} fake members to group ${gid}…`,'in2');
+  let ok=0,fail=0,createdIds=[];
+  for(let i=0;i<count;i++){
+    let{name,username}=rUser();
+    try{
+      let uid=null;
+      for(let a=0;a<3;a++){
+        try{const r=await aFetch('/api/admin/generate-fake','POST',{username,name,password:'cachat123',verified:0});uid=r.id;break;}
+        catch(e){if(e.message.includes('taken')){const u=rUser();username=u.username;name=u.name;}else throw e;}
+      }
+      if(!uid)throw new Error('Could not create account');
+      createdIds.push(uid);
+      // Add to group via admin endpoint
+      await aFetch(`/api/admin/add-group-member`,'POST',{group_id:gid,user_id:uid}).catch(()=>{});
+      ok++;addLog(logEl,`✅ [${i+1}/${count}] @${username} (ID:${uid}) added to group`,'ok2');
+    }catch(e){fail++;addLog(logEl,`❌ [${i+1}/${count}] ${e.message}`,'er2');}
+    prog.style.width=((i+1)/count*100)+'%';await sleep(300);
+  }
+  addLog(logEl,`\nDone! ✅ ${ok} added  ❌ ${fail} failed`,'ok2');
+  if(createdIds.length){addLog(logEl,`Created user IDs: ${createdIds.join(', ')}\nAdd these to auto-ping to keep them active!`,'in2');}
+  toast(`Added ${ok} fake members ✅`,true);
+  document.getElementById('pi-ids').value=createdIds.join(',');
+  loadUsers();
+}
+
+/* AUTO-PING */
+async function startPing(){
+  const ids=document.getElementById('pi-ids').value.split(',').map(x=>parseInt(x.trim())).filter(Boolean);
+  const mins=parseInt(document.getElementById('pi-min').value)||5;
+  if(!ids.length)return toast('Enter user IDs',false);
+  stopPing();
+  const doPing=async()=>{
+    for(const id of ids){
+      try{await aFetch(`/api/admin/ping-user/${id}`,'POST').catch(()=>{});}catch{}
+    }
+    document.getElementById('pi-status').innerHTML=`<span style="color:#1db954">🟢 Active — ${ids.length} accounts · Last ping: ${new Date().toLocaleTimeString()} · Next in ${mins}min</span>`;
+  };
+  await doPing();
+  pingTimer=setInterval(doPing,mins*60*1000);
+  document.getElementById('pi-start').textContent='🟢 Running…';
+  toast(`Auto-ping started for ${ids.length} accounts ✅`,true);
+}
+function stopPing(){if(pingTimer){clearInterval(pingTimer);pingTimer=null;}document.getElementById('pi-status').textContent='Not running';document.getElementById('pi-start').textContent='▶ Start';}
+
+/* UTILS */
+function addLog(el,msg,cls){const d=document.createElement('div');d.className=cls;d.textContent=msg;el.appendChild(d);el.scrollTop=el.scrollHeight;}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function h(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(ts){if(!ts)return'—';return new Date(ts*1000).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'});}
+let toastT;
+function toast(msg,ok=false){const el=document.getElementById('toast');el.textContent=msg;el.className='toast on'+(ok?' ok':' er');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),3000);}
+</script>
+</body>
+</html>
