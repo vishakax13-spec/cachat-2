@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: cachat
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        value: cachat_aryan_super_secret_key_2024_xyz
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8791363862:AAGrLOthnIhEAXqRO-4yQa-66l0CW96RuLU
+      - key: TELEGRAM_CHAT_ID
+        value: 7706193343
+      - key: DB_PATH
+        value: /var/data/cachat.db
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+
+disks:
+  - name: cachat-database
+    mountPath: /var/data
+    sizeGB: 0.5
